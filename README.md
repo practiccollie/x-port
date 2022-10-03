@@ -40,7 +40,7 @@ https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e0726
 
 * **GraphQL**
 https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L187-L102
-)
+
 * **GhostWriter**
 https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L118-L120
 
