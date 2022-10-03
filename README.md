@@ -39,7 +39,7 @@ Make sure to modify the following sections:
 https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L64-L82
 
 * **GraphQL**
-https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L187-L102
+https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L87-L102
 
 * **GhostWriter**
 https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L118-L120
