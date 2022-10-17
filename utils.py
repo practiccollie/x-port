@@ -1,4 +1,4 @@
-import os,logging, sys, getpass
+import os,logging, sys, getpass, readline
 from datetime import datetime, date, time, timedelta
 from prettytable import PrettyTable
 from requests_futures.sessions import FuturesSession
