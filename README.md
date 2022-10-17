@@ -30,8 +30,8 @@ $ python3 x-port.py <path/to/findings-directory>
 The script looks for the "GW_USER" & "GW_PASS" as environment variables.  
 You should add the following lines to your shell configuration file.
 ```
-export GW_USER="Your-Username"
-export GW_PASS="Your-Password"
+export GW_USER="Your-Username>
+export GW_PASS="Your-Password>
 ```
 ### utils.py
 Make sure to modify the following sections:
