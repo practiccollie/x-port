@@ -1,30 +1,43 @@
 import re
 from utils import *
 
-class GhostWriter:
 
+class GhostWriter:
     def __init__(self):
         self.session = FuturesSession()
-        resp = self.session.get(GW_URL_LOGIN, allow_redirects=False)
-        self.cookies = {'csrftoken' : str(resp.result().cookies['csrftoken'])}
 
+        try:
+            resp = self.session.get(GW_URL_LOGIN, allow_redirects=False, timeout=10)
+            self.cookies = {'csrftoken' : str(resp.result().cookies['csrftoken'])}
+
+        except requests.exceptions.ConnectTimeout:
+            sys.exit(f'\nLogin request to {GW_URL_LOGIN} has timed out. Are you logged to the VPN?')
+
+        except Exception as e:
+            sys.exit(resp.result().text + '\n', e)
     
+
     def cookie_scrape(self): # Make this Async + dynamic
         payload = {
             'csrfmiddlewaretoken' : self.cookies['csrftoken'], 
             'login': USERNAME,
             'password': PASSWORD
         }
-
-        req = self.session.post(GW_URL_LOGIN, data=payload, cookies=self.cookies, allow_redirects=False)
-        self.cookies['sessionid'] = str(req.result().cookies['sessionid'])
+        try:
+            req = self.session.post(GW_URL_LOGIN, data=payload, cookies=self.cookies, allow_redirects=False)
+            self.cookies['sessionid'] = str(req.result().cookies['sessionid'])
+        except KeyError:
+            if ENV_USER and ENV_PASS:
+                sys.exit('\nThe Environment variables for the Username and/or Password are not correct.')
+            else:
+                sys.exit('\nThe Username and/or Password are not correct.')
         return    
 
     
     def download_report(self, report_id, zone_name):
 
         url = f'{GW_URL_REPORTING}{report_id}/docx/'
-        path = 'Reports'
+        path = f'Reports/{zone_name}'
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -34,7 +47,7 @@ class GhostWriter:
             with open(f"{report_filename}.docx", 'wb') as f:
                 f.write(resp.content)
         
-        print(f"""The report "{report_filename.split("Reports/")[1]}.docx" was added to {os.getcwd()}/Reports\n""")
+        print(f"""The report "{report_filename.split("Reports/")[1]}.docx" was added to \033[1m\033[92m{os.path.abspath(path)}\033[0m\n""")
      
 
 class GraphQL:
@@ -98,29 +111,7 @@ class GraphQL:
 
         return nested_findings_dict
     
-    
-    def print_findings_table(self, findings_dict):
-        """Print a table for the user from the data in "nested_findings_dict", retrived from "get_findings_requests()".
-
-        Uses PrettyTable to format the dataframe. Takes key values from "nested_findings_dict.items()"
-
-        Args:
-            nested_findings_dict (dict): the data to use.
-        Returns:
-            print(table) : Prints a findings dataframe table.
-        Raises:
-            Exception: Catch exception.
-        """
-
-
-        table = PrettyTable()
-        table.field_names = ['ID','Finding']
-        table.align = "l"
-        for key, val in findings_dict.items():
-            table.add_row([key, val['title']])
-        print(table.get_string(sortby="Finding"))
-
-    
+        
     def get_user_choice(self):
         """Takes user-input of findings IDs.
 
@@ -180,14 +171,18 @@ class GraphQL:
         }
     
         response = self.session.post(GQL_URL_V1, headers=HEADERS, json={'query': query, 'variables' : variables})
+        
+
         # Parse project_id & zone_name from GhostWriter response 
         if 'data' in response.result().data:
             created_project_id = response.result().data.get('data').get('insert_project').get('returning')[0].get('id')
             zone_name = response.result().data.get('data').get('insert_project').get('returning')[0].get('client').get('shortName')
             return created_project_id, zone_name
 
-        elif 'errors' in response.result().data:
-            sys.exit('Client ID was not found, existing.')
+        # If client_id not present in database, print error
+        elif 'not present in table \\"rolodex_client\\"' in response.result().text:
+            print(f'\nZone ID "{ZONE_ID}" does not exist in the zones list.')
+            sys.exit(response.result().data.get('errors')[0].get('extensions').get('internal').get('error').get('description'))
 
         print(response.result().data)
         
@@ -224,33 +219,29 @@ class GraphQL:
             final_finding_query (list): Ready to use GraphQL query.
         """
         
-        try:
-            # import ipdb; ipdb.set_trace()
-            if not choices_split:
-                sys.exit(f'[+] No relevant findings in {sys.argv[1]}')
 
-            prepare_create_report = []
-            for choice in choices_split:
-                finding_description = self.escape_chars(nested_findings_dict[int(choice)]['description'])
-                finding_impact = self.escape_chars(nested_findings_dict[int(choice)]['impact'])
-                finding_mitigation = self.escape_chars(nested_findings_dict[int(choice)]['mitigation'])
-                finding_rep_step = self.escape_chars(nested_findings_dict[int(choice)]['replication_steps'])
-                finding_title = self.escape_chars(nested_findings_dict[int(choice)]['title'])
-                finding_references = f"<ul>{self.escape_chars(nested_findings_dict[int(choice)]['url'])}</ul>"
-                finding_severity = nested_findings_dict[int(choice)]['severityId']
+        if not choices_split:
+            sys.exit(f'[+] No relevant findings in {sys.argv[1]}')
 
-                graphql_finding_query = """
-                {{title: "{finding_title}", description: "{finding_description}", impact: "{finding_impact}", mitigation: "{finding_mitigation}", references: "{finding_references}", replication_steps: "{finding_rep_step}", severityId: "{finding_severity}"}}
-                """.format(finding_title=finding_title, finding_description=finding_description, finding_impact=finding_impact, finding_mitigation=finding_mitigation, finding_references=finding_references, finding_rep_step=finding_rep_step, finding_severity=finding_severity)
+        prepare_create_report = []
+        for choice in choices_split:
+            finding_description = self.escape_chars(nested_findings_dict[int(choice)]['description'])
+            finding_impact = self.escape_chars(nested_findings_dict[int(choice)]['impact'])
+            finding_mitigation = self.escape_chars(nested_findings_dict[int(choice)]['mitigation'])
+            finding_rep_step = self.escape_chars(nested_findings_dict[int(choice)]['replication_steps'])
+            finding_title = self.escape_chars(nested_findings_dict[int(choice)]['title'])
+            finding_references = f"<ul>{self.escape_chars(nested_findings_dict[int(choice)]['url'])}</ul>"
+            finding_severity = nested_findings_dict[int(choice)]['severityId']
 
-                prepare_create_report.append(graphql_finding_query.replace('\n\t',''))
-                remove_double_quotes = ', '.join(prepare_create_report)
-                final_finding_query = str.join(" ", remove_double_quotes.splitlines())
-                
-            return final_finding_query
+            graphql_finding_query = """
+            {{title: "{finding_title}", description: "{finding_description}", impact: "{finding_impact}", mitigation: "{finding_mitigation}", references: "{finding_references}", replication_steps: "{finding_rep_step}", severityId: "{finding_severity}", added_as_blank: false}}
+            """.format(finding_title=finding_title, finding_description=finding_description, finding_impact=finding_impact, finding_mitigation=finding_mitigation, finding_references=finding_references, finding_rep_step=finding_rep_step, finding_severity=finding_severity)
 
-        except KeyError:
-            sys.exit(f'[+] No files were found in {sys.argv[1]} folder.')    
+            prepare_create_report.append(graphql_finding_query.replace('\n\t',''))
+            remove_double_quotes = ', '.join(prepare_create_report)
+            final_finding_query = str.join(" ", remove_double_quotes.splitlines())
+            
+        return final_finding_query
 
     
     def create_report(self, created_project_id, final_finding_query):
@@ -290,6 +281,7 @@ class GraphQL:
         'title' : PROJECT_NAME
         }
 
+
         response = self.session.post(GQL_URL_V1, headers=HEADERS, json={'query': query, 'variables' : variables}) 
 
         # Returns the value of "returning" key into a list variable
@@ -311,3 +303,4 @@ class GraphQL:
             print(f"\n {response.result().data.get('errors')[0].get('message')}")
         else:
             print(response.text)
+

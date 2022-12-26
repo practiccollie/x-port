@@ -3,8 +3,7 @@ import traceback
 from utils import *
 from azstorage import *
 from ghostwriter import *
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import current_thread, get_ident, get_native_id
+from concurrent.futures import ThreadPoolExecutor
 
 def main(): 
     # Initialize Objects
@@ -25,7 +24,7 @@ def main():
         # Get & Print Findings
         nested_findings_dict = graphQL.get_finding_requests()
 
-
+        
         # Match dirs name to findings
         dirs_list = dirs_to_choices(nested_findings_dict)
         
@@ -60,9 +59,10 @@ def main():
         if not all_files:
             sys.exit(f'[+] No files were found in {sys.argv[1]} folder.')
 
+
         with ThreadPoolExecutor() as executor:
             for file in all_files:
-                    executor.submit(azureManage.upload_files, file, fs_client)
+                executor.submit(azureManage.upload_files, file, fs_client)
 
 
         urls = {}
@@ -72,11 +72,12 @@ def main():
                 url_token = azureManage.generate_sas_token(ACCOUNT_NAME, acc_key, zone_name, path['name'])
 
                 # Get the directory name of the uploaded finding 
-                directory_name = path.name.split('/')[-2] 
+                directory_name = path.name.split('/')[2] 
 
                 # Check if links[key] exists. If not, create one with a list object as its value and append the url to the list.
                 urls[directory_name] = urls.get(directory_name, [])
                 urls[directory_name].append(f"""<li><a href="{url_token}">{url_token.split('?')[0].split('/')[-1]}</a></li>""")
+
 
 
         # Insert links into the relevant finding in "nested_findings_dict"

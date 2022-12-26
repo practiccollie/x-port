@@ -1,7 +1,8 @@
-import os,logging, sys, getpass, readline
+import requests.exceptions
+import os, sys, getpass, readline
 from datetime import datetime, date, time, timedelta
-from prettytable import PrettyTable
 from requests_futures.sessions import FuturesSession
+
 
 # -----------------------
 #       Arguments 
@@ -12,23 +13,8 @@ if len (sys.argv) != 2 :
     sys.exit ()
     
 PATH = sys.argv[1]
-
-# -----------------------
-#        Globals 
-# -----------------------
-
-# Environmental Credentials for GhostWriter & GraphQL
-ENV_USER = os.environ.get('GW_USER')
-ENV_PASS = os.environ.get('GW_PASS')
-
-# Set Credentials
-if ENV_USER and ENV_PASS:
-    USERNAME = ENV_USER
-    PASSWORD = ENV_PASS
-
-else:
-    USERNAME = input('Enter Your GhostWriter Username: ')
-    PASSWORD = getpass.getpass(prompt='Enter Your Password: ')
+if PATH[-1] == '/':
+    PATH = PATH[:-1]
 
 # -----------------------
 #      x-port logo 
@@ -77,9 +63,27 @@ Team Members IDs
 ----------------
   name_1 : 1 
   name_2 : 2
+  
+[+] Please Enter Team Member ID: """
 
-[+] Please select team member/s ID: """
-    
+# -----------------------
+#        Globals 
+# -----------------------
+
+# Environmental Credentials 
+ENV_USER = os.environ.get('GW_USER')
+ENV_PASS = os.environ.get('GW_PASS')
+
+# Set Credentials
+if ENV_USER and ENV_PASS:
+    USERNAME = ENV_USER
+    PASSWORD = ENV_PASS
+
+else:
+    USERNAME = input('\nEnter Your GhostWriter Username: ')
+    PASSWORD = getpass.getpass(prompt='\nEnter Your Password: ')
+
+   
 # -----------------------
 #        GraphQL 
 # -----------------------
@@ -103,13 +107,14 @@ ENGINEER_ROLE_ID = '1' ### Replace with your engineer role ID
 
 # Project
 PROJECT_TYPE = '4' ### Web Application Assessment
-
-ZONE_ID = input(GLOBAL_SITES_PROMPT)
 PROJECT_NAME = input(CODENAME_PROMPT)
 START_DATE = input(START_DATE_PROMPT)
 END_DATE = input(END_DATE_PROMPT)
 ENGINEER_ID = input(TEAM_MEMBER_PROMPT)
 PROJECT_COLOR = input('\nEnter Assessment Type - Black/Grey/White: ')
+
+
+
 
 # -----------------------
 #       GhostWriter 
@@ -129,6 +134,7 @@ VAULT_KEY= "<vault-key>" ### Replace with your vault key
 FOLDER_NAME = f'{date.today().year}/{PROJECT_NAME}'
 ACCOUNT_NAME= "<storage-account-name>" ### Replace with your storage account name
 
+
 # -----------------------
 #     Util Functions 
 # -----------------------
@@ -143,8 +149,7 @@ def urls_to_dict(links, dictionary):
 
 
 def dirs_to_choices(dictionary):
-    # Need to add docstring
-
+    # Need to add docstring    
     dirs = [file.name for file in os.scandir(PATH) if file.is_dir()]
 
     id_list = []
@@ -152,10 +157,16 @@ def dirs_to_choices(dictionary):
         for dir in dirs:
             if dir.lower() in value['title'].lower():
                 id_list.append(key)
+    
+    if not id_list:
+        print(f"\n[-] Didn't find matching findings in GhostWriter for the given directory. Please check if the directory names are spelled correctly and exist in the GhostWriter findings.\n----------------------------")
+        print("\n".join(dirs))
+        sys.exit('')
+    
     return id_list
 
 
 def response_hook(resp, *args, **kwargs):
     # Parse JSON from the Futures.result() to Dictionary 
-
     resp.data = resp.json()
+    

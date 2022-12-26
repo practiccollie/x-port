@@ -30,22 +30,23 @@ $ python3 x-port.py <path/to/findings-directory>
 The script looks for the "GW_USER" & "GW_PASS" as environment variables.  
 You should add the following lines to your shell configuration file.
 ```
-export GW_USER="Your-Username>
-export GW_PASS="Your-Password>
+export GW_USER = "Your-Username>
+export GW_PASS = "Your-Password>
 ```
+
 ### utils.py
 Make sure to modify the following sections:
 * **Prompts** 
-https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L64-L82
+https://github.com/practiccollie/x-port/blob/d963649d4ac47e33cd74f11537839a644fc12a87/utils.py#L64-L82
 
 * **GraphQL**
-https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L87-L102
+https://github.com/practiccollie/x-port/blob/d963649d4ac47e33cd74f11537839a644fc12a87/utils.py#L88-L100
 
 * **GhostWriter**
-https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L118-L120
+https://github.com/practiccollie/x-port/blob/d963649d4ac47e33cd74f11537839a644fc12a87/utils.py#L115-L117
 
 * **Azure**
-https://github.com/practiccollie/x-port/blob/ac5218f355d5525c71dca7f35a1524e07261227b/utils.py#L126-L130
+https://github.com/practiccollie/x-port/blob/d963649d4ac47e33cd74f11537839a644fc12a87/utils.py#L122-L126
 
 # Authors
 * [@practiccollie](https://github.com/practiccollie)
